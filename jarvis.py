@@ -4,6 +4,7 @@ import speech_recognition as sr
 import wikipedia
 import webbrowser
 import os
+import smtplib
 
 engine=pyttsx3.init('sapi5')
 voices=engine.getProperty('voices')
@@ -44,13 +45,20 @@ def takeCommand():
         print("say that again please......")
         return "None"
     return query
-    
+
+def sendEmail(to, content): 
+    server=smtplib.SMTP('smtp.gmail.com',587)
+    server.ehlo()
+    server.starttls()
+    server.login('ntrdevara036@gmail.com','Devara$036')
+    server.sendmail('unknownguy4ur@gmail.com', to, content)
+    server.close()
 
 
 if __name__=="__main__":
     wishMe()
-    # while True:
-    if 1:
+    while True:
+    # if 1:
         query=takeCommand().lower()
 
 
@@ -82,3 +90,15 @@ if __name__=="__main__":
         elif 'open code' in query:
             codepath="C:\\Users\\ravik\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
             os.startfile(codepath)  
+
+        elif 'email to ravi' in query:
+            try:
+                speak("en kalsbeku..")
+                content= takeCommand()
+                to="unknownguy4ur@gmail.com"
+                sendEmail(to, content)
+                speak("Email talupitu")
+            
+            except Exception as e:
+                print(e)
+                speak("sorry anna email kalsoke agilla innonda sala try madu") 
