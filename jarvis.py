@@ -1,104 +1,108 @@
-import pyttsx3
-import datetime
-import speech_recognition as sr
-import wikipedia
-import webbrowser
 import os
-import smtplib
+import speech_recognition as sr
+import pyttsx3
+import webbrowser
+import random
+import datetime
 
-engine=pyttsx3.init('sapi5')
-voices=engine.getProperty('voices')
+# Initialize the text-to-speech engine
+engine = pyttsx3.init()
 
-engine.setProperty('voice',voices[0].id)
-
-def speak(audio):
-    engine.say(audio)
+# Function to speak a given text
+def say(text):
+    engine.say(text)
     engine.runAndWait()
 
-
-def wishMe():
-    hour=int(datetime.datetime.now().hour)
-    if hour >=0 and hour<12:
-        speak("Good Morning!")
-
-    elif hour>=12 and hour<=18:
-        speak("Good Afetrnoon")
-
-    else:
-        speak("Good Evening")
-
-    speak("I am your assistant. please tell me how may i help you")
-
+# Function to take voice commands from the user
 def takeCommand():
-    r=sr.Recognizer()
+    r = sr.Recognizer()
     with sr.Microphone() as source:
-        print("listening....")
-        r.pause_threshold=1
-        audio= r.listen(source)
+        print("Listening...")
+        r.pause_threshold = 1  # Pause threshold for speech recognition
+        audio = r.listen(source)
+        try:
+            query = r.recognize_google(audio, language="en-in")
+            print(f"User said: {query}")
+            return query.lower()  # Return query in lowercase
+        except Exception as e:
+            say("Sorry, I didn't catch that. Please repeat.")
+            return "None"
 
-    try:
-        print("Recognising...")
-        query=r.recognize_google(audio, language='en-in')
-        print(f"user said: {query}\n")
+# Function to handle website searches
+def perform_search(site_name, search_query):
+    search_urls = {
+        "google": "https://www.google.com/search?q=",
+        "youtube": "https://www.youtube.com/results?search_query=",
+        "wikipedia": "https://en.wikipedia.org/wiki/",
+        "amazon": "https://www.amazon.com/s?k=",
+        "flipkart": "https://www.flipkart.com/search?q=",
+        "udemy": "https://www.udemy.com/courses/search/?q=",
+        "coursera": "https://www.coursera.org/search?query=",
+        "linkedin": "https://www.linkedin.com/search/results/all/?keywords=",
+        "reddit": "https://www.reddit.com/search/?q=",
+    }
+    
+    if site_name in search_urls:
+        search_url = search_urls[site_name] + search_query.replace(" ", "+")
+        webbrowser.open(search_url)
+        say(f"Searching {search_query} on {site_name} for you.")
+    else:
+        say(f"Sorry, I don't have search functionality for {site_name} yet.")
 
-    except Exception as e:
-        print("say that again please......")
-        return "None"
-    return query
-
-def sendEmail(to, content): 
-    server=smtplib.SMTP('smtp.gmail.com',587)
-    server.ehlo()
-    server.starttls()
-    server.login('ntrdevara036@gmail.com','Devara$036')
-    server.sendmail('unknownguy4ur@gmail.com', to, content)
-    server.close()
-
-
-if __name__=="__main__":
-    wishMe()
+# Main program
+if __name__ == '__main__':
+    say("Hello, I am your AI assistant. How can I assist you today?")
+    
     while True:
-    # if 1:
-        query=takeCommand().lower()
+        query = takeCommand()
+        if query == "None":
+            continue
 
+        # Exit condition
+        if "exit" in query or "bye" in query:
+            say("Goodbye! Have a nice day.")
+            break
 
-        if 'wikipedia' in query:
-            speak("Searching Wikipedia....")
-            query=query.replace("wikipedia", "")
-            results=wikipedia.summary(query, sentences=3)
-            speak("According to wikipedia...")
-            print(results)
-            speak(results)
-        
-        elif 'open youtube' in query:
-            webbrowser.open("www.youtube.com")
-
-        elif 'open google' in query:
-            webbrowser.open("www.google.com")
-
-        elif 'play music' in query:
-            music_dir='D:\\rsk\\MUSIC'
-            song=os.listdir(music_dir)
-            print(song)
-            os.startfile(os.path.join(music_dir, song[0]))
-
-        elif 'the time' in query:
-            strTime=datetime.datetime.now().strftime("%H:%M:%S")
-            print(strTime)
-            speak(f"now the time is {strTime}")
-
-        elif 'open code' in query:
-            codepath="C:\\Users\\ravik\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
-            os.startfile(codepath)  
-
-        elif 'email to ravi' in query:
+        # Handle user-friendly search requests
+        if "open" in query:
             try:
-                speak("en kalsbeku..")
-                content= takeCommand()
-                to="unknownguy4ur@gmail.com"
-                sendEmail(to, content)
-                speak("Email talupitu")
-            
+                words = query.split("open")[1].strip()  # Extract everything after "open"
+                site_name = None
+                search_query = None
+
+                # Identify the site and search query
+                for site in ["google", "youtube", "wikipedia", "amazon", "flipkart", "udemy", "coursera", "linkedin", "reddit"]:
+                    if site in words:
+                        site_name = site
+                        search_query = words.replace(site, "").strip()
+                        break
+                
+                if site_name and search_query:
+                    perform_search(site_name, search_query)
+                elif site_name:
+                    webbrowser.open(f"https://{site_name}.com")
+                    say(f"Opening {site_name} for you.")
+                else:
+                    say("Sorry, I couldn't understand your request.")
             except Exception as e:
-                print(e)
-                speak("sorry anna email kalsoke agilla innonda sala try madu") 
+                say("Sorry, I couldn't process your request. Please try again.")
+
+        # Play music
+        elif 'play music' in query or 'play songs' in query:
+            music_dir = 'D:\\rsk\\MUSIC'
+            if os.path.exists(music_dir):
+                songs = os.listdir(music_dir)
+                if songs:  # Check if the directory has songs
+                    random_song = random.choice(songs)
+                    os.startfile(os.path.join(music_dir, random_song))
+                    say(f"Playing {random_song} for you.")
+                else:
+                    say("The music directory is empty.")
+            else:
+                say("The music directory does not exist.")
+        
+        # Tell the current time
+        elif 'time' in query:
+            current_time = datetime.datetime.now().strftime("%H:%M:%S")
+            say(f"The time is {current_time}.")
+
